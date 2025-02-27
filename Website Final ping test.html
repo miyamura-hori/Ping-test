@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping, Speed Test & WiFi Status</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: white; margin: 20px; }
+        h2, p { margin-bottom: 10px; }
+        .container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .box { background: #1e1e1e; padding: 15px; border-radius: 8px; width: 300px; text-align: left; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
+        #pingOutput, #speedOutput, #wifiStatus { white-space: pre-line; height: 150px; overflow-y: auto; border: 1px solid #B0E0E6; padding: 10px; text-align: center; background: #252525; color: powderblue; }
+        button { background: #B0E0E6; color: black; border: none; padding: 10px; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px; border-radius: 5px; }
+        button:disabled { background: gray; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h2>Ping, Speed Test & WiFi Status</h2>
+
+    <div class="container">
+        <!-- Box Ping -->
+        <div class="box">
+            <h3>Ping 192.168.2.1</h3>
+            <button id="startPingBtn" onclick="startPing()">Start Ping</button>
+            <button id="stopPingBtn" onclick="stopPing()" disabled>Stop Ping</button>
+            <div id="pingOutput">Waiting to start...</div>
+        </div>
+
+        <!-- Box Speed Test -->
+        <div class="box">
+            <h3>Speedtest</h3>
+            <button onclick="testSpeed()">Start</button>
+            <div id="speedOutput">Speed: - Mbps</div>
+        </div>
+
+        <!-- Box WiFi Status -->
+        <div class="box">
+            <h3>Wifi Status</h3>
+            <div id="wifiStatus">Checking...</div>
+        </div>
+    </div>
+
+    <script>
+        // PING FUNCTION
+        let pingInterval;
+        let targetIP = "192.168.2.1";
+
+        function startPing() {
+            let outputDiv = document.getElementById("pingOutput");
+            document.getElementById("startPingBtn").disabled = true;
+            document.getElementById("stopPingBtn").disabled = false;
+            outputDiv.innerHTML = "\n";
+
+            pingInterval = setInterval(async () => {
+                let startTime = performance.now();
+                try {
+                    await fetch(`http://${targetIP}`, { mode: "no-cors" });
+                    let latency = Math.round(performance.now() - startTime);
+                    outputDiv.innerHTML += `Reply from ${targetIP}: time=${latency}ms\n`;
+                } catch (error) {
+                    outputDiv.innerHTML += `Request timed out to ${targetIP}.\n`;
+                }
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+            }, 1000);
+        }
+
+        function stopPing() {
+            clearInterval(pingInterval);
+            document.getElementById("startPingBtn").disabled = false;
+            document.getElementById("stopPingBtn").disabled = true;
+        }
+
+        // SPEED TEST FUNCTION (Metode Gambar)
+        async function testSpeed() {
+            let outputDiv = document.getElementById("speedOutput");
+            outputDiv.innerText = "Testing...";
+
+            let imageUrl = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg"; // File gambar kecil
+            let fileSize = 512 * 8; // 512 KB dalam Kbit
+
+            let startTime = performance.now();
+            let img = new Image();
+            img.onload = function () {
+                let endTime = performance.now();
+                let duration = (endTime - startTime) / 1000; // Konversi ke detik
+                let speedMbps = (fileSize / duration / 1000).toFixed(2); // Hitung Mbps
+                outputDiv.innerText = `Download Speed: ${speedMbps} Mbps`;
+            };
+            img.onerror = function () {
+                outputDiv.innerText = "Error.";
+            };
+            img.src = imageUrl + "?t=" + new Date().getTime(); // Cache Delete
+        }
+
+        // WiFi STATUS FUNCTION
+        function checkWiFi() {
+            let wifiDiv = document.getElementById("wifiStatus");
+            function updateStatus() {
+                if (navigator.onLine) {
+                    wifiDiv.innerHTML = "🟢 WiFi Connect";
+                } else {
+                    wifiDiv.innerHTML = "🔴 No Connection";
+                }
+            }
+            updateStatus();
+            window.addEventListener("online", updateStatus);
+            window.addEventListener("offline", updateStatus);
+        }
+
+        checkWiFi();
+    </script>
+</body>
+</html>
