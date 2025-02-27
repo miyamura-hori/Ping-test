@@ -35,7 +35,7 @@
 
         <!-- Box WiFi Status -->
         <div class="box">
-            <h3>Wifi Status</h3>
+            <h3>WiFi Status</h3>
             <div id="wifiStatus">Checking...</div>
         </div>
     </div>
@@ -70,26 +70,54 @@
             document.getElementById("stopPingBtn").disabled = true;
         }
 
-        // SPEED TEST FUNCTION (Metode Gambar)
+        // SPEED TEST FUNCTION (Download & Upload Paralel)
         async function testSpeed() {
             let outputDiv = document.getElementById("speedOutput");
             outputDiv.innerText = "Testing...";
 
+            let [downloadSpeed, uploadSpeed] = await Promise.all([
+                measureDownloadSpeed(),
+                measureUploadSpeed()
+            ]);
+
+            outputDiv.innerText = `📥 Download: ${downloadSpeed} Mbps\n📤 Upload: ${uploadSpeed} Mbps`;
+        }
+
+        async function measureDownloadSpeed() {
             let imageUrl = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg"; // File gambar kecil
             let fileSize = 512 * 8; // 512 KB dalam Kbit
 
             let startTime = performance.now();
             let img = new Image();
-            img.onload = function () {
+            return new Promise((resolve) => {
+                img.onload = function () {
+                    let endTime = performance.now();
+                    let duration = (endTime - startTime) / 1000; // Konversi ke detik
+                    let speedMbps = (fileSize / duration / 1000).toFixed(2); // Hitung Mbps
+                    resolve(speedMbps);
+                };
+                img.onerror = function () {
+                    resolve("Error");
+                };
+                img.src = imageUrl + "?t=" + new Date().getTime(); // Cache Bypass
+            });
+        }
+
+        async function measureUploadSpeed() {
+            let uploadUrl = "https://httpbin.org/post"; // Server uji
+            let fileSize = 256 * 8; // Simulasi file 256 KB dalam Kbit
+            let blob = new Blob([new Uint8Array(fileSize * 1024 / 8)]); // Buat file dummy
+
+            let startTime = performance.now();
+            try {
+                let response = await fetch(uploadUrl, { method: "POST", body: blob });
                 let endTime = performance.now();
                 let duration = (endTime - startTime) / 1000; // Konversi ke detik
                 let speedMbps = (fileSize / duration / 1000).toFixed(2); // Hitung Mbps
-                outputDiv.innerText = `Download Speed: ${speedMbps} Mbps`;
-            };
-            img.onerror = function () {
-                outputDiv.innerText = "Error.";
-            };
-            img.src = imageUrl + "?t=" + new Date().getTime(); // Cache Delete
+                return speedMbps;
+            } catch {
+                return "Error";
+            }
         }
 
         // WiFi STATUS FUNCTION
@@ -97,7 +125,7 @@
             let wifiDiv = document.getElementById("wifiStatus");
             function updateStatus() {
                 if (navigator.onLine) {
-                    wifiDiv.innerHTML = "🟢 WiFi Connect";
+                    wifiDiv.innerHTML = "🟢 WiFi Connected";
                 } else {
                     wifiDiv.innerHTML = "🔴 No Connection";
                 }
